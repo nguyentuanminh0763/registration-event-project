@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Tìm kiếm đăng ký</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="container mt-5">
+  <h2 class="mb-4 text-primary">🔎 Tìm kiếm đăng ký theo khoảng thời gian</h2>
+
+  <!-- FORM TÌM KIẾM -->
+  <form id="searchForm" class="row g-3 mb-4" novalidate>
+    <div class="col-md-5">
+      <label for="startDate" class="form-label">Ngày bắt đầu</label>
+      <input type="date" id="startDate" name="start" class="form-control" required>
+    </div>
+    <div class="col-md-5">
+      <label for="endDate" class="form-label">Ngày kết thúc</label>
+      <input type="date" id="endDate" name="end" class="form-control" required>
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button type="submit" class="btn btn-success w-100">Tìm</button>
+    </div>
+  </form>
+
+  <!-- KẾT QUẢ -->
+  <div id="resultArea"></div>
+
+  <!-- SCRIPT -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const form = document.getElementById('searchForm');
+      const resultArea = document.getElementById('resultArea');
+
+      form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const start = document.getElementById('startDate').value;
+        const end = document.getElementById('endDate').value;
+
+        if (!start || !end || new Date(start) > new Date(end)) {
+          return alert('Vui lòng chọn khoảng ngày hợp lệ!');
+        }
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          return alert('Bạn chưa đăng nhập!');
+        }
+
+        try {
+          const res = await fetch(`/api/registration/getRegistrationsByDate?start=${start}&end=${end}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            return resultArea.innerHTML = `<div class="alert alert-danger">${data.error || 'Lỗi không xác định'}</div>`;
+          }
+
+          if (!data.data || data.data.length === 0) {
+            return resultArea.innerHTML = `<div class="alert alert-warning">Không có đăng ký nào trong khoảng thời gian này.</div>`;
+          }
+
+          // Render bảng kết quả
+          let html = `
+            <table class="table table-bordered table-striped mt-4">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>Số điện thoại SV</th>
+                  <th>Tên sự kiện</th>
+                  <th>Ngày tổ chức</th>
+                  <th>Ngày đăng ký</th>
+                </tr>
+              </thead>
+              <tbody>
+          `;
+
+          data.data.forEach((reg, index) => {
+            html += `
+              <tr>
+                <td>${index + 1}</td>
+                <td>${reg.studentId?.phone || 'N/A'}</td>
+                <td>${reg.eventId?.name || 'N/A'}</td>
+                <td>${new Date(reg.eventId?.date).toLocaleDateString()}</td>
+                <td>${new Date(reg.registrationDate).toLocaleString()}</td>
+              </tr>
+            `;
+          });
+
+          html += '</tbody></table>';
+          resultArea.innerHTML = html;
+
+        } catch (err) {
+          console.error(err);
+          resultArea.innerHTML = `<div class="alert alert-danger">Lỗi máy chủ!</div>`;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Huỷ đăng ký</title>
+</head>
+<body>
+  <h2>Danh sách sự kiện bạn đã đăng ký</h2>
+
+  <% if (registrations.length === 0) { %>
+    <p>Bạn chưa đăng ký sự kiện nào.</p>
+  <% } else { %>
+    <ul>
+      <% registrations.forEach(reg => { %>
+        <li>
+          <strong>Sự kiện:</strong> <%= reg.eventId.name %><br>
+          <strong>Ngày:</strong> <%= new Date(reg.eventId.date).toLocaleDateString() %><br>
+          <strong>Địa điểm:</strong> <%= reg.eventId.location %><br>
+          <strong>Ngày đăng ký:</strong> <%= new Date(reg.registrationDate).toLocaleString() %><br>
+          <button onclick="cancelRegistration('<%= reg._id %>')">Huỷ đăng ký</button>
+          <hr>
+        </li>
+      <% }) %>
+    </ul>
+  <% } %>
+
+  <button onclick="window.location.href='/dashboard'">Quay lại Dashboard</button>
+
+  <script>
+    async function cancelRegistration(registrationId) {
+      if (!confirm('Bạn có chắc muốn huỷ đăng ký không?')) return
+
+      try {
+        const res = await fetch(`/api/registration/registrations/${registrationId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
+
+        const result = await res.json()
+
+        if (res.ok) {
+          alert(result.message)
+          window.location.reload()
+        } else {
+          alert(result.error || 'Huỷ đăng ký thất bại')
+          if (res.status === 401 || res.status === 403) {
+            window.location.href = '/login'
+          }
+        }
+      } catch (err) {
+        alert('Lỗi máy chủ')
+        console.error(err)
+      }
+    }
+  </script>
+</body>
+</html>
